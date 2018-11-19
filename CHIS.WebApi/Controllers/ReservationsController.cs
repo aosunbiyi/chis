@@ -199,7 +199,8 @@ namespace CHIS.WebApi.Controllers
 
             }
 
-            var reservations = _context.reservations.FromSql(sqlBuilder.ToString(), "").ToList();
+            var reservations = _context.reservations.FromSql(sqlBuilder.ToString(), "").Include(a=>a.reserved_rooms).
+                Include(a=>a.reservation_transaction).ToList();
 
             return Ok(reservations);
         }
@@ -309,11 +310,9 @@ namespace CHIS.WebApi.Controllers
 
             if(userId > 0)
             {
-                ac = _context.accounts.Where(a=>a.id==userId).FirstOrDefault();
-               
+                ac = _context.accounts.Where(a=>a.id==userId).FirstOrDefault();               
                 ac.address1 = userForm.address1;
-                ac.address2 = userForm.address2;
-              
+                ac.address2 = userForm.address2;              
                 ac.city = userForm.city;
                 ac.country = userForm.country;              
                 ac.email = userForm.email;
@@ -483,6 +482,92 @@ namespace CHIS.WebApi.Controllers
             return Ok(rs);
         }
 
+
+        [HttpPost("edit_reserved_room")]
+        public IActionResult edit_reserved_room([FromBody] EditReservationData data)
+        {
+            var reservation_id = int.Parse(data.reservation_id);
+            var reserved_room_id = int.Parse(data.reserved_room_id);
+            var change_value = int.Parse(data.change_value);
+            var type = data.type;
+
+            var reservation = _context.reservations.Where(a => a.id == reservation_id).Include(a=>a.reserved_rooms)
+                .Include(a=>a.reservation_transaction).FirstOrDefault();
+            var reserved_room = _context.reserved_rooms.Where(a => a.id == reserved_room_id).Include(a=>a.reservation_transaction).FirstOrDefault();
+            if (type == "adult")
+            {
+                if (reserved_room.num_of_adult == change_value)
+                {
+                    return Ok(reservation);
+                }
+                else
+                {                  
+             
+                    reserved_room.num_of_adult = change_value;
+                    _context.SaveChanges();
+
+                    reservation.total_booking = 0M;
+                    foreach (var tran in reserved_room.reservation_transaction)
+                    {
+                        var rate = getRoomRate(tran.transaction_date.Value, reserved_room.room_type_id);
+                        tran.total_reservation = rate.amount.Value;
+                        tran.total_children = reserved_room.num_of_children * rate.extra_child;
+                        tran.total_adult = reserved_room.num_of_adult * rate.extra_adult;
+                        tran.total = tran.total_adult + tran.total_children + tran.total_reservation;
+                        tran.balance = tran.total;
+                        tran.rate = rate.amount;
+                        tran.rate_type = _context.rate_types.Where(a => a.id == rate.rate_type_id).FirstOrDefault().rate_type_name;
+                        tran.rate_name = rate.rate_name;
+                        reservation.total_booking += tran.total;
+                        _context.SaveChanges();
+                    }
+
+                    reservation.balance = reservation.total_booking - reservation.amount_paid;
+                    reserved_room.balance = reservation.balance;
+                    reserved_room.total = reservation.total_booking;
+                    _context.SaveChanges();
+                    reservation = _context.reservations.Where(a => a.id == reservation_id).Include(a => a.reserved_rooms)
+                                  .Include(a => a.reservation_transaction).FirstOrDefault();
+                    return Ok(reservation);
+
+                }
+            }
+            else
+            {
+                if (reserved_room.num_of_children == change_value)
+                {
+                    return Ok(reservation);
+                }
+                else
+                {
+                    reserved_room.num_of_children = change_value;
+                    _context.SaveChanges();
+
+
+                    foreach (var tran in reserved_room.reservation_transaction)
+                    {
+                        var rate = getRoomRate(tran.transaction_date.Value, reserved_room.room_type_id);
+                        tran.total_reservation = rate.amount.Value;
+                        tran.total_children = reserved_room.num_of_children * rate.extra_child;
+                        tran.total_adult = reserved_room.num_of_adult * rate.extra_adult;
+                        tran.total = tran.total_adult + tran.total_children + tran.total_reservation;
+                        tran.balance = tran.total;
+                        tran.rate = rate.amount;
+                        tran.rate_type = _context.rate_types.Where(a => a.id == rate.rate_type_id).FirstOrDefault().rate_type_name;
+                        tran.rate_name = rate.rate_name;
+                        _context.SaveChanges();
+                    }
+                    reservation.balance = reservation.total_booking - reservation.amount_paid;
+                    reserved_room.balance = reservation.balance;
+                    reserved_room.total = reservation.total_booking;
+                    _context.SaveChanges();
+                    reservation = _context.reservations.Where(a => a.id == reservation_id).Include(a => a.reserved_rooms)
+                                  .Include(a => a.reservation_transaction).FirstOrDefault();
+                    return Ok(reservation);
+
+                }
+            }
+        }
         public rates getRoomRate(DateTime day, int roomTypeId)
         {
             var roomRates =  _context.room_types_rates.Include(a => a.rate_).Where(a => a.room_type_id == roomTypeId).ToList();
@@ -495,6 +580,14 @@ namespace CHIS.WebApi.Controllers
        
     }
 
+
+    public class EditReservationData
+    {
+        public String reservation_id { set; get; }
+        public String reserved_room_id { set; get; }
+        public String change_value { set; get; }
+        public String type { set; get; }
+    }
   
     public class Posted_Data
     {
