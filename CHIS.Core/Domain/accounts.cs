@@ -33,6 +33,7 @@ namespace CHIS.Core.Domain
         public string card_holder { get; set; }
         public string card_number { get; set; }
         public DateTime? exp_date { get; set; }
+        public string group_name { get; set; }
         public string reg_number { get; set; }
         public string reg_number1 { get; set; }
         public string reg_number2 { get; set; }

@@ -518,7 +518,7 @@ namespace CHIS.WebApi.Controllers
                         tran.rate = rate.amount;
                         tran.rate_type = _context.rate_types.Where(a => a.id == rate.rate_type_id).FirstOrDefault().rate_type_name;
                         tran.rate_name = rate.rate_name;
-                        reservation.total_booking += tran.total;
+                        reservation.total_booking = reservation.total_booking+tran.total;
                         _context.SaveChanges();
                     }
 

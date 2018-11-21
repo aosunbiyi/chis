@@ -177,6 +177,10 @@ namespace CHIS.Core.Domain
                     .HasMaxLength(255)
                     .IsUnicode(false);
 
+                entity.Property(e => e.group_name)
+                    .IsRequired()
+                    .IsUnicode(false);
+
                 entity.Property(e => e.hotel_representative_id).HasColumnType("int(11)");
 
                 entity.Property(e => e.last_name)
