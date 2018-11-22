@@ -482,6 +482,42 @@ namespace CHIS.WebApi.Controllers
             return Ok(rs);
         }
 
+        [HttpPost("transfer_room")]
+        public IActionResult transfer_room([FromBody] TransferRoomData data)
+        {
+            var reserved_room = _context.reserved_rooms.Where(a => a.id == data.reserved_room_id).FirstOrDefault();
+            var new_account = _context.accounts.Where(a => a.id == data.new_account_id).SingleOrDefault();
+
+            reserved_room.new_account_id = new_account.id;
+            reserved_room.transfer_owner = new_account.first_name + " " + new_account.last_name;
+
+            _context.SaveChanges();
+
+            return Ok(reserved_room);
+        }
+
+        [HttpGet("delete_reserved_room")]
+        public IActionResult delete_reserved_room([FromRoute] int id )
+        {
+            var rm = _context.reserved_rooms.Where(a => a.id == id).Include(a=>a.reservation_transaction).FirstOrDefault();
+            var reservation = _context.reservations.Where(a => a.id == rm.reservation_id).FirstOrDefault();
+            var total_reservation = 0M;
+            foreach (var tran in rm.reservation_transaction)
+            {
+                total_reservation = total_reservation + tran.total.Value;
+            }
+
+            _context.reservation_transaction.RemoveRange(rm.reservation_transaction);
+            _context.reserved_rooms.Remove(rm);
+            reservation.total_booking = reservation.total_booking - total_reservation;
+
+            _context.SaveChanges();
+          
+            
+
+            return Ok("deleted");
+        }
+
 
         [HttpPost("edit_reserved_room")]
         public IActionResult edit_reserved_room([FromBody] EditReservationData data)
@@ -580,6 +616,12 @@ namespace CHIS.WebApi.Controllers
        
     }
 
+
+    public class TransferRoomData
+    {
+        public int reserved_room_id { get; set; }
+        public int new_account_id { get; set; }
+    }
 
     public class EditReservationData
     {
