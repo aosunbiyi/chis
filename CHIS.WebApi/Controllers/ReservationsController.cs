@@ -326,6 +326,7 @@ namespace CHIS.WebApi.Controllers
             }
             else
             {
+
                 ac = new accounts();
                 ac.account_number = CHIS.Core.Infrastructure.AccountGenerator.Generate(10);
                 var account_type = _context.account_types.Select(a => a).OrderBy(a => a.id).FirstOrDefault();
@@ -364,39 +365,50 @@ namespace CHIS.WebApi.Controllers
             }
 
             
-            
-
-           
            
 
             var rs = new reservations();
             rs.account_id = ac.id;
             var arrival_string = bookingForm.arrival.Split("/");
             var new_arrival_date = String.Format("{0}-{1}-{2}", arrival_string[2], arrival_string[0], arrival_string[1]);
-            rs.arrival = DateTime.Parse(new_arrival_date);  
-            rs.arrival_time =  bookingForm.arrival_time;
+            rs.arrival = DateTime.Parse(new_arrival_date); 
             rs.book_by = bookingForm.book_by;
             rs.book_on = DateTime.Now;
             rs.business_source_id = int.Parse(businessForm.business_source_id);
             rs.code = Guid.NewGuid().ToString();
             rs.created = DateTime.Now;
             rs.departure = rs.arrival.Value.AddDays(int.Parse(bookingForm.num_of_night));
-            rs.departure_time = bookingForm.departure_time;
             rs.modified = DateTime.Now;
             rs.num_of_night = int.Parse(bookingForm.num_of_night);
             rs.reservation_number = CHIS.Core.Infrastructure.AccountGenerator.Generate(8);
             rs.reservation_status = "Open";
             rs.account_number = paymentForm.account_number;
-            rs.apply_discount = paymentForm.apply_discount;
+            var onDiscounts = Boolean.Parse(paymentForm.apply_discount);
+            if (onDiscounts)
+            {
+                rs.apply_discount = 1;
+                rs.discount_code = paymentForm.discount_code;
+                rs.discount_plan = int.Parse(paymentForm.discount_plan);
+                rs.discount_value = Decimal.Parse(paymentForm.discount_value);
+            }
+            else
+            {
+                rs.apply_discount = 0;
+                rs.discount_code = "";
+                //rs.discount_plan = 0;
+                rs.discount_value = 0M;
+            }
+            
             rs.bank_name = paymentForm.bank_name;
             rs.branch_name = paymentForm.branch_name;
             rs.cheque = paymentForm.cheque;
-            rs.discount_code = paymentForm.discount_code;
-            rs.discount_plan = int.Parse(paymentForm.discount_plan);
-            rs.discount_value = Decimal.Parse(paymentForm.discount_value);
+           
+         
             rs.amount_paid = Decimal.Parse(paymentForm.amount);
             rs.balance = Decimal.Parse(paymentForm.balance);
             rs.total_booking = Decimal.Parse(paymentForm.total_amount);
+            rs.payment_status = "incomplete";
+            rs.last_payment_id = 0;
         
 
 
@@ -409,11 +421,9 @@ namespace CHIS.WebApi.Controllers
             {
                 var dd = new reserved_rooms();
                 dd.arrival = rs.arrival;
-                dd.arrival_time = rs.arrival_time;
                 dd.balance = Decimal.Parse(paymentForm.balance);
                 dd.created = rs.created;
                 dd.departure = DateTime.Now;
-                dd.departure_time = "";
                 dd.modified = DateTime.Now;
                 dd.num_of_night = rs.num_of_night;
                 dd.original_owner = ac.first_name + " " + ac.last_name;
@@ -474,10 +484,73 @@ namespace CHIS.WebApi.Controllers
                 }
             }
 
+            reservation_payments payment = new reservation_payments();
+           
+            payment.created = DateTime.Now;
+            payment.modified = DateTime.Now;
+            payment.paid = Decimal.Parse(paymentForm.amount);
+            payment.payment_method = paymentForm.payment_method;
+            payment.reservation_id = rs.id;
+            payment.status = "";
+            payment.total_amount = Decimal.Parse(paymentForm.total_amount);
+            payment.transaction_date = DateTime.Now;
+            payment.transaction_type = "Reservation Payment";
+            payment.balance = Decimal.Parse(paymentForm.balance);
+           
+            var apply_discount = Boolean.Parse(paymentForm.apply_discount);
+            if (apply_discount)
+            {
+                payment.on_discount = 1;
+                var discount = 0M;
+                decimal.TryParse(paymentForm.discount_value,out discount);
+                payment.discount_value = discount;
+                var discount_id = int.Parse(paymentForm.discount_plan);
+                var MainDiscount = _context.discount_plans.Where(a => a.id == discount_id).FirstOrDefault();
+                payment.discount_name = MainDiscount.plan_name;
+                if (MainDiscount.plan_category.Trim() == "c100")
+                {
+                    var discount2 = (payment.discount_value / 100M) * payment.total_amount;
+                    payment.total_amount_with_discount = payment.total_amount.Value - discount2.Value;
+                    payment.balance = payment.total_amount_with_discount - payment.paid;
+                    rs.discount_amount = discount2.Value;
+
+                }
+                else
+                {
+                    var amount =payment.total_amount - payment.discount_value ;
+                    payment.total_amount_with_discount = amount.Value;
+                    payment.balance = payment.total_amount_with_discount - payment.paid;
+                    rs.discount_amount = payment.discount_value;
+                }
+            }
+            else
+            {
+                payment.on_discount = 0;
+                payment.discount_name ="";
+                payment.discount_type = 0;
+                payment.discount_value = 0;
+                payment.total_amount_with_discount = 0M;
+                
+            }
+            _context.reservation_payments.Add(payment);
             _context.SaveChanges();
 
+            rs.total_amount_with_discount = payment.total_amount_with_discount;
+            rs.balance = payment.balance;            
+            rs.last_payment_id = payment.id;
+             if(rs.balance <= 0)
+            {
+                rs.payment_status = "Completed";
+            }
+            else
+            {
+                rs.payment_status = "Incomplete";
+            }
 
+            _context.SaveChanges();
 
+            rs = _context.reservations.Where(a => a.id == rs.id).Include(a=>a.reservation_payments).Include(a=>a.reserved_rooms).FirstOrDefault();
+          
 
             return Ok(rs);
         }
@@ -604,6 +677,63 @@ namespace CHIS.WebApi.Controllers
                 }
             }
         }
+
+        [HttpPost("post_reservation_payment")]
+        public IActionResult post_reservation_payment([FromBody] PaymentData payment)
+        {
+            var reservation = _context.reservations.Where(a=>a.id== payment.reservation_id.Value).FirstOrDefault();
+            var last_transaction = _context.reservation_payments.Where(a => a.id == reservation.last_payment_id).FirstOrDefault();
+            var amount_paid = Decimal.Parse(payment.paymentForm.amount);
+            var isCompleted = false;
+            if(amount_paid >= reservation.balance)
+            {
+                isCompleted = true;                
+            }
+         
+
+            var tran = new reservation_payments();
+            tran.balance = reservation.balance - amount_paid;
+            tran.created = DateTime.Now;
+            
+            if(reservation.apply_discount == 1)
+            {
+                var discount = _context.discount_plans.Where(a => a.id == reservation.discount_plan.Value).FirstOrDefault();
+                tran.discount_name = discount.plan_name;
+                tran.discount_type = discount.id;
+                tran.discount_value = reservation.discount_value.Value;
+                tran.on_discount = 1;
+              
+
+            }
+            else
+            {
+                tran.discount_name = "";
+                tran.discount_value = 0M;
+                tran.on_discount = 0;
+            }
+            tran.modified = DateTime.Now;
+            tran.paid = amount_paid;
+            tran.payment_method = payment.paymentForm.payment_method;
+            tran.reservation_id = reservation.id;
+            if (isCompleted)
+            {
+                tran.status = "Completed";
+                reservation.payment_status = "Completed";
+            }
+            else
+            {
+                tran.status = "Incomplete";
+            }
+
+            tran.total_amount = reservation.total_booking;
+            tran.total_amount_with_discount = reservation.total_amount_with_discount;
+            reservation.balance = tran.balance;
+            _context.SaveChanges();
+
+            return Ok(reservation);
+        }
+
+
         public rates getRoomRate(DateTime day, int roomTypeId)
         {
             var roomRates =  _context.room_types_rates.Include(a => a.rate_).Where(a => a.room_type_id == roomTypeId).ToList();
@@ -616,6 +746,11 @@ namespace CHIS.WebApi.Controllers
        
     }
 
+    public class PaymentData
+    {
+        public int? reservation_id { get; set; }
+        public PaymentForm paymentForm { get; set; }
+    }
 
     public class TransferRoomData
     {

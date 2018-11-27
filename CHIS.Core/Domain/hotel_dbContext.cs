@@ -52,6 +52,7 @@ namespace CHIS.Core.Domain
         public virtual DbSet<remark_categories> remark_categories { get; set; }
         public virtual DbSet<remarks> remarks { get; set; }
         public virtual DbSet<reservation_log_entries> reservation_log_entries { get; set; }
+        public virtual DbSet<reservation_payments> reservation_payments { get; set; }
         public virtual DbSet<reservation_transaction> reservation_transaction { get; set; }
         public virtual DbSet<reservations> reservations { get; set; }
         public virtual DbSet<reserved_rooms> reserved_rooms { get; set; }
@@ -937,6 +938,56 @@ namespace CHIS.Core.Domain
                 entity.Property(e => e.reserved_room_id).HasColumnType("int(11)");
             });
 
+            modelBuilder.Entity<reservation_payments>(entity =>
+            {
+                entity.ToTable("reservation_payments", "hotel_db");
+
+                entity.HasIndex(e => e.reservation_id)
+                    .HasName("reservations__key_23339100");
+
+                entity.Property(e => e.id).HasColumnType("int(11)");
+
+                entity.Property(e => e.balance).HasColumnType("decimal(20,2)");
+
+                entity.Property(e => e.discount_name)
+                    .IsRequired()
+                    .HasMaxLength(200)
+                    .IsUnicode(false);
+
+                entity.Property(e => e.discount_type).HasColumnType("int(11)");
+
+                entity.Property(e => e.discount_value).HasColumnType("decimal(20,2)");
+
+                entity.Property(e => e.on_discount).HasColumnType("tinyint(4)");
+
+                entity.Property(e => e.paid).HasColumnType("decimal(20,2)");
+
+                entity.Property(e => e.payment_method)
+                    .HasMaxLength(200)
+                    .IsUnicode(false);
+
+                entity.Property(e => e.reservation_id).HasColumnType("int(11)");
+
+                entity.Property(e => e.status)
+                    .HasMaxLength(120)
+                    .IsUnicode(false);
+
+                entity.Property(e => e.total_amount).HasColumnType("decimal(20,2)");
+
+                entity.Property(e => e.total_amount_with_discount).HasColumnType("decimal(20,2)");
+
+                entity.Property(e => e.transaction_type)
+                    .IsRequired()
+                    .HasMaxLength(200)
+                    .IsUnicode(false);
+
+                entity.HasOne(d => d.reservation_)
+                    .WithMany(p => p.reservation_payments)
+                    .HasForeignKey(d => d.reservation_id)
+                    .OnDelete(DeleteBehavior.ClientSetNull)
+                    .HasConstraintName("reservations__key_23339100");
+            });
+
             modelBuilder.Entity<reservation_transaction>(entity =>
             {
                 entity.ToTable("reservation_transaction", "hotel_db");
@@ -1027,9 +1078,7 @@ namespace CHIS.Core.Domain
 
                 entity.Property(e => e.amount_paid).HasColumnType("decimal(18,2)");
 
-                entity.Property(e => e.apply_discount)
-                    .HasMaxLength(200)
-                    .IsUnicode(false);
+                entity.Property(e => e.apply_discount).HasColumnType("tinyint(4)");
 
                 entity.Property(e => e.arrival_time)
                     .HasMaxLength(250)
@@ -1064,6 +1113,8 @@ namespace CHIS.Core.Domain
                     .HasMaxLength(250)
                     .IsUnicode(false);
 
+                entity.Property(e => e.discount_amount).HasColumnType("decimal(20,2)");
+
                 entity.Property(e => e.discount_code)
                     .HasMaxLength(200)
                     .IsUnicode(false);
@@ -1072,11 +1123,18 @@ namespace CHIS.Core.Domain
 
                 entity.Property(e => e.discount_value).HasColumnType("decimal(20,2)");
 
+                entity.Property(e => e.last_payment_id).HasColumnType("int(11)");
+
                 entity.Property(e => e.num_of_adult).HasColumnType("int(11)");
 
                 entity.Property(e => e.num_of_children).HasColumnType("int(11)");
 
                 entity.Property(e => e.num_of_night).HasColumnType("int(11)");
+
+                entity.Property(e => e.payment_status)
+                    .IsRequired()
+                    .HasMaxLength(200)
+                    .IsUnicode(false);
 
                 entity.Property(e => e.reservation_number)
                     .IsRequired()
@@ -1086,6 +1144,10 @@ namespace CHIS.Core.Domain
                 entity.Property(e => e.reservation_status)
                     .HasMaxLength(150)
                     .IsUnicode(false);
+
+                entity.Property(e => e.total_amount_with_discount).HasColumnType("decimal(20,2)");
+
+                entity.Property(e => e.total_balance_with_discount).HasColumnType("decimal(20,2)");
 
                 entity.Property(e => e.total_booking).HasColumnType("decimal(18,2)");
 

@@ -8,6 +8,7 @@ namespace CHIS.Core.Domain
         public reservations()
         {
             arrival_departure_infos = new HashSet<arrival_departure_infos>();
+            reservation_payments = new HashSet<reservation_payments>();
             reservation_transaction = new HashSet<reservation_transaction>();
             reserved_rooms = new HashSet<reserved_rooms>();
         }
@@ -31,13 +32,18 @@ namespace CHIS.Core.Domain
         public decimal? balance { get; set; }
         public string reservation_status { get; set; }
         public string account_number { get; set; }
-        public string apply_discount { get; set; }
+        public byte? apply_discount { get; set; }
         public string bank_name { get; set; }
         public string branch_name { get; set; }
         public string cheque { get; set; }
         public string discount_code { get; set; }
         public int? discount_plan { get; set; }
         public decimal? discount_value { get; set; }
+        public decimal discount_amount { get; set; }
+        public string payment_status { get; set; }
+        public int last_payment_id { get; set; }
+        public decimal total_amount_with_discount { get; set; }
+        public decimal total_balance_with_discount { get; set; }
         public DateTime? created { get; set; }
         public DateTime? modified { get; set; }
 
@@ -45,6 +51,7 @@ namespace CHIS.Core.Domain
         public business_sources business_source_ { get; set; }
         public discount_plans discount_planNavigation { get; set; }
         public ICollection<arrival_departure_infos> arrival_departure_infos { get; set; }
+        public ICollection<reservation_payments> reservation_payments { get; set; }
         public ICollection<reservation_transaction> reservation_transaction { get; set; }
         public ICollection<reserved_rooms> reserved_rooms { get; set; }
     }
