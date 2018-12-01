@@ -40,7 +40,7 @@ namespace CHIS.WebApi.Controllers
                 return BadRequest(ModelState);
             }
 
-            var reservations = await _context.reservations.FindAsync(id);
+            var reservations = await _context.reservations.Include(a=>a.account_).Include(a=>a.reservation_payments).Include(a=>a.reserved_rooms).Where(a=>a.id== id).FirstOrDefaultAsync();
 
             if (reservations == null)
             {
@@ -200,7 +200,9 @@ namespace CHIS.WebApi.Controllers
             }
 
             var reservations = _context.reservations.FromSql(sqlBuilder.ToString(), "").Include(a=>a.reserved_rooms).
-                Include(a=>a.reservation_transaction).ToList();
+                Include(a=>a.reservation_payments).Include(a=>a.reservation_transaction).ToList();
+
+          
 
             return Ok(reservations);
         }
@@ -243,18 +245,13 @@ namespace CHIS.WebApi.Controllers
                 dd.modified = DateTime.Now;
                 dd.reserved_status = "Open";
                 dd.room_id = int.Parse(room.id);
-                dd.room_type_id = int.Parse(room.room_type_id);
-               
+                dd.room_type_id = int.Parse(room.room_type_id);               
                 dd.num_of_night = rs.num_of_night;
                 dd.num_of_adult = int.Parse(room.extra_adult);
                 dd.num_of_children = int.Parse(room.extra_children);
                 dd.room_name = room.room_name;
                 dd.room_type_name = room.room_type_name;
-
-               
-
                 rs.reserved_rooms.Add(dd);
-
             }
 
             foreach (var rr in rs.reserved_rooms)
@@ -291,6 +288,18 @@ namespace CHIS.WebApi.Controllers
 
 
             return Ok(rs);
+        }
+
+
+        [HttpPost("get_total_reservation_rate_by_room_id")]
+        public IActionResult get_total_reservation_rate_by_room_id([FromBody]RateDate data)
+        {
+            var room_id = data.room_id;
+            var currentDate = DateTime.Now;
+            var room = _context.rooms.Include(a=>a.room_type_).Where(a => a.id == room_id).FirstOrDefault();
+
+            var rate = getRoomRate(currentDate, room.room_type_.id);
+            return Ok(rate);
         }
 
 
@@ -381,7 +390,7 @@ namespace CHIS.WebApi.Controllers
             rs.modified = DateTime.Now;
             rs.num_of_night = int.Parse(bookingForm.num_of_night);
             rs.reservation_number = CHIS.Core.Infrastructure.AccountGenerator.Generate(8);
-            rs.reservation_status = "Open";
+            rs.reservation_status = "Reserved";
             rs.account_number = paymentForm.account_number;
             var onDiscounts = Boolean.Parse(paymentForm.apply_discount);
             if (onDiscounts)
@@ -430,7 +439,7 @@ namespace CHIS.WebApi.Controllers
                 dd.paid = Decimal.Parse(paymentForm.amount);
                 dd.reservation_id = rs.id;
                 dd.modified = DateTime.Now;
-                dd.reserved_status = "Open";
+                dd.reserved_status = "Reserved";
                 dd.room_id =int.Parse(room.id);
                 dd.room_type_id = int.Parse(room.room_type_id);
                 dd.serial_number = CHIS.Core.Infrastructure.AccountGenerator.Generate(8);
@@ -469,7 +478,7 @@ namespace CHIS.WebApi.Controllers
                     tran.rate = rate.amount;
                     tran.reservation_id = rs.id;
                     tran.reserved_room_id = rr.id;
-                    tran.status = "Open";
+                    tran.status = "Reserved";
                     tran.transaction_date = rs.arrival.Value.AddDays(i);
                     tran.rate_type = _context.rate_types.Where(a => a.id == rate.rate_type_id).FirstOrDefault().rate_type_name;
                     tran.rate_name = rate.rate_name;
@@ -715,6 +724,7 @@ namespace CHIS.WebApi.Controllers
             tran.paid = amount_paid;
             tran.payment_method = payment.paymentForm.payment_method;
             tran.reservation_id = reservation.id;
+            tran.transaction_type = "Reservation Payment";
             if (isCompleted)
             {
                 tran.status = "Completed";
@@ -725,12 +735,50 @@ namespace CHIS.WebApi.Controllers
                 tran.status = "Incomplete";
             }
 
-            tran.total_amount = reservation.total_booking;
-            tran.total_amount_with_discount = reservation.total_amount_with_discount;
+            tran.total_amount = reservation.balance;
+            tran.total_amount_with_discount = reservation.balance.Value;
+          
+            _context.reservation_payments.Add(tran);
+            _context.SaveChanges();
+
             reservation.balance = tran.balance;
+            reservation.last_payment_id = tran.id;
             _context.SaveChanges();
 
             return Ok(reservation);
+        }
+
+
+        [HttpPost("checkin_reservation")]
+        public IActionResult checkin_reservation([FromBody] CheckinData checkinData)
+        {
+            var reservation = _context.reservations.Where(a => a.id == checkinData.id).Include(a=>a.reserved_rooms).Include(a=>a.reservation_transaction).FirstOrDefault();
+            var result = new { data=""};
+            if(reservation.payment_status=="Completed" )
+            {
+                foreach (var room in reservation.reserved_rooms)
+                {
+                    room.reserved_status = "CheckIn";
+                }
+                _context.SaveChanges();
+
+                foreach (var tran in reservation.reservation_transaction)
+                {
+                    tran.status = "CheckIn";
+                }
+                _context.SaveChanges();
+
+                reservation.reservation_status = "CheckIn";
+                _context.SaveChanges();
+                result = new { data = "The reservation was successfuly Checked In." };
+                return Ok(result);
+            }
+            else
+            {
+                result = new { data = "Error in Checking In your reservation. Incomplete Payments" };
+                return Ok(result);
+            }
+         
         }
 
 
@@ -744,6 +792,13 @@ namespace CHIS.WebApi.Controllers
         }
 
        
+    }
+
+    // DTO's  DATA TRANSFER OBJECTS
+
+    public class CheckinData
+    {
+        public int id { get; set; }
     }
 
     public class PaymentData
@@ -859,6 +914,11 @@ namespace CHIS.WebApi.Controllers
         public String Field { get; set; }
         public String Condition { get; set; }
         public String  Value  { get; set; }
+    }
+
+    public class RateDate
+    {
+        public int room_id;
     }
 
 

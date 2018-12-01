@@ -24,7 +24,7 @@ namespace CHIS.WebApi.Controllers
         [HttpGet]
         public IEnumerable<rooms> Getrooms()
         {
-            return _context.rooms;
+            return _context.rooms.Include(a=>a.reserved_rooms);
         }
 
         [HttpGet("getRoomsByRoomTypeId/{id}")]
@@ -70,8 +70,9 @@ namespace CHIS.WebApi.Controllers
                 return BadRequest(ModelState);
             }
 
-            var rooms = await _context.rooms.FindAsync(id);
-
+            var rooms = await _context.rooms.Include(a=>a.room_images).Include(a=>a.floor_).Include(a=>a.room_type_).Where(a=>a.id== id).FirstOrDefaultAsync();
+            var amenities = _context.rooms_amenities.Where(a => a.room_id == rooms.id).Include(a=>a.amenity_).ToList();
+            rooms.rooms_amenities = amenities;
             if (rooms == null)
             {
                 return NotFound();
