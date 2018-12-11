@@ -40,7 +40,7 @@ namespace CHIS.WebApi.Controllers
                 return BadRequest(ModelState);
             }
 
-            var reservations = await _context.reservations.Include(a=>a.account_).Include(a=>a.reservation_payments).Include(a=>a.reserved_rooms).Where(a=>a.id== id).FirstOrDefaultAsync();
+            var reservations = await _context.reservations.Include(a=>a.account_ ).Include(a=>a.reservation_payments).Include(a=>a.reserved_rooms).Where(a=>a.id== id).FirstOrDefaultAsync();
 
             if (reservations == null)
             {
@@ -558,7 +558,7 @@ namespace CHIS.WebApi.Controllers
 
             _context.SaveChanges();
 
-            rs = _context.reservations.Where(a => a.id == rs.id).Include(a=>a.reservation_payments).Include(a=>a.reserved_rooms).FirstOrDefault();
+            rs = _context.reservations.Where(a => a.id == rs.id).Include(a=>a.account_).Include(a=>a.reservation_payments).Include(a=>a.reserved_rooms).FirstOrDefault();
           
 
             return Ok(rs);

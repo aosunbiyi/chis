@@ -7,6 +7,7 @@ namespace CHIS.Core.Domain
     {
         public rooms()
         {
+            laundry_guest_laundry_transactions = new HashSet<laundry_guest_laundry_transactions>();
             reserved_rooms = new HashSet<reserved_rooms>();
             room_images = new HashSet<room_images>();
             rooms_amenities = new HashSet<rooms_amenities>();
@@ -32,6 +33,7 @@ namespace CHIS.Core.Domain
         public floors floor_ { get; set; }
         public room_owners room_owner_ { get; set; }
         public room_types room_type_ { get; set; }
+        public ICollection<laundry_guest_laundry_transactions> laundry_guest_laundry_transactions { get; set; }
         public ICollection<reserved_rooms> reserved_rooms { get; set; }
         public ICollection<room_images> room_images { get; set; }
         public ICollection<rooms_amenities> rooms_amenities { get; set; }

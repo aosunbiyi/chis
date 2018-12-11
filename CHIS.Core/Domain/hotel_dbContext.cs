@@ -38,6 +38,16 @@ namespace CHIS.Core.Domain
         public virtual DbSet<hotel_representatives> hotel_representatives { get; set; }
         public virtual DbSet<identities> identities { get; set; }
         public virtual DbSet<invoice_settings> invoice_settings { get; set; }
+        public virtual DbSet<laundry_guest_laundry_transaction_items> laundry_guest_laundry_transaction_items { get; set; }
+        public virtual DbSet<laundry_guest_laundry_transactions> laundry_guest_laundry_transactions { get; set; }
+        public virtual DbSet<laundry_hotel_laundry_transaction_items> laundry_hotel_laundry_transaction_items { get; set; }
+        public virtual DbSet<laundry_hotel_laundry_transactions> laundry_hotel_laundry_transactions { get; set; }
+        public virtual DbSet<laundry_hotel_services> laundry_hotel_services { get; set; }
+        public virtual DbSet<laundry_item_categories> laundry_item_categories { get; set; }
+        public virtual DbSet<laundry_items> laundry_items { get; set; }
+        public virtual DbSet<laundry_items_laundry_services> laundry_items_laundry_services { get; set; }
+        public virtual DbSet<laundry_packaging_types> laundry_packaging_types { get; set; }
+        public virtual DbSet<laundry_services> laundry_services { get; set; }
         public virtual DbSet<mainconfig> mainconfig { get; set; }
         public virtual DbSet<mastersetup> mastersetup { get; set; }
         public virtual DbSet<meal_plans> meal_plans { get; set; }
@@ -670,6 +680,342 @@ namespace CHIS.Core.Domain
                     .IsUnicode(false);
 
                 entity.Property(e => e.start_from).HasColumnType("int(11)");
+            });
+
+            modelBuilder.Entity<laundry_guest_laundry_transaction_items>(entity =>
+            {
+                entity.ToTable("laundry_guest_laundry_transaction_items", "hotel_db");
+
+                entity.HasIndex(e => e.laundry_guest_laundry_transaction_id)
+                    .HasName("laundry_guest_laundry_transaction_key90887");
+
+                entity.HasIndex(e => e.laundry_item_id)
+                    .HasName("laundry_item_key908654");
+
+                entity.Property(e => e.id).HasColumnType("int(11)");
+
+                entity.Property(e => e.charges).HasColumnType("decimal(20,2)");
+
+                entity.Property(e => e.laundry_guest_laundry_transaction_id).HasColumnType("int(11)");
+
+                entity.Property(e => e.laundry_item_id).HasColumnType("int(11)");
+
+                entity.Property(e => e.quantity).HasColumnType("int(11)");
+
+                entity.Property(e => e.status)
+                    .HasMaxLength(200)
+                    .IsUnicode(false);
+
+                entity.Property(e => e.total_charges).HasColumnType("decimal(20,2)");
+
+                entity.HasOne(d => d.laundry_guest_laundry_transaction_)
+                    .WithMany(p => p.laundry_guest_laundry_transaction_items)
+                    .HasForeignKey(d => d.laundry_guest_laundry_transaction_id)
+                    .OnDelete(DeleteBehavior.ClientSetNull)
+                    .HasConstraintName("laundry_guest_laundry_transaction_key90887");
+
+                entity.HasOne(d => d.laundry_item_)
+                    .WithMany(p => p.laundry_guest_laundry_transaction_items)
+                    .HasForeignKey(d => d.laundry_item_id)
+                    .OnDelete(DeleteBehavior.ClientSetNull)
+                    .HasConstraintName("laundry_item_key908654");
+            });
+
+            modelBuilder.Entity<laundry_guest_laundry_transactions>(entity =>
+            {
+                entity.ToTable("laundry_guest_laundry_transactions", "hotel_db");
+
+                entity.HasIndex(e => e.account_id)
+                    .HasName("account_key560989");
+
+                entity.HasIndex(e => e.laundry_hotel_service_id)
+                    .HasName("laundry_hotel_services_key126754");
+
+                entity.HasIndex(e => e.laundry_packaging_type_id)
+                    .HasName("laundry_packaging_type_key45900");
+
+                entity.HasIndex(e => e.laundry_service_id)
+                    .HasName("laundry_service_key457889");
+
+                entity.HasIndex(e => e.room_id)
+                    .HasName("room_key678543");
+
+                entity.Property(e => e.id).HasColumnType("int(11)");
+
+                entity.Property(e => e.account_id).HasColumnType("int(11)");
+
+                entity.Property(e => e.code)
+                    .HasMaxLength(200)
+                    .IsUnicode(false);
+
+                entity.Property(e => e.delivery_time)
+                    .HasMaxLength(100)
+                    .IsUnicode(false);
+
+                entity.Property(e => e.laundry_hotel_service_id).HasColumnType("int(11)");
+
+                entity.Property(e => e.laundry_packaging_type_id).HasColumnType("int(11)");
+
+                entity.Property(e => e.laundry_service_id).HasColumnType("int(11)");
+
+                entity.Property(e => e.room_id).HasColumnType("int(11)");
+
+                entity.Property(e => e.status)
+                    .HasMaxLength(200)
+                    .IsUnicode(false);
+
+                entity.Property(e => e.total_charges).HasColumnType("decimal(20,2)");
+
+                entity.Property(e => e.transaction_time)
+                    .HasMaxLength(200)
+                    .IsUnicode(false);
+
+                entity.HasOne(d => d.account_)
+                    .WithMany(p => p.laundry_guest_laundry_transactions)
+                    .HasForeignKey(d => d.account_id)
+                    .OnDelete(DeleteBehavior.ClientSetNull)
+                    .HasConstraintName("account_key560989");
+
+                entity.HasOne(d => d.laundry_hotel_service_)
+                    .WithMany(p => p.laundry_guest_laundry_transactions)
+                    .HasForeignKey(d => d.laundry_hotel_service_id)
+                    .OnDelete(DeleteBehavior.ClientSetNull)
+                    .HasConstraintName("laundry_hotel_services_key126754");
+
+                entity.HasOne(d => d.laundry_packaging_type_)
+                    .WithMany(p => p.laundry_guest_laundry_transactions)
+                    .HasForeignKey(d => d.laundry_packaging_type_id)
+                    .OnDelete(DeleteBehavior.ClientSetNull)
+                    .HasConstraintName("laundry_packaging_type_key45900");
+
+                entity.HasOne(d => d.laundry_service_)
+                    .WithMany(p => p.laundry_guest_laundry_transactions)
+                    .HasForeignKey(d => d.laundry_service_id)
+                    .OnDelete(DeleteBehavior.ClientSetNull)
+                    .HasConstraintName("laundry_service_key457889");
+
+                entity.HasOne(d => d.room_)
+                    .WithMany(p => p.laundry_guest_laundry_transactions)
+                    .HasForeignKey(d => d.room_id)
+                    .OnDelete(DeleteBehavior.ClientSetNull)
+                    .HasConstraintName("room_key678543");
+            });
+
+            modelBuilder.Entity<laundry_hotel_laundry_transaction_items>(entity =>
+            {
+                entity.ToTable("laundry_hotel_laundry_transaction_items", "hotel_db");
+
+                entity.HasIndex(e => e.laundry_guest_laundry_transaction_id)
+                    .HasName("laundry_guest_laundry_transaction_key900077");
+
+                entity.HasIndex(e => e.laundry_item_id)
+                    .HasName("laundry_item_key876543");
+
+                entity.Property(e => e.id).HasColumnType("int(11)");
+
+                entity.Property(e => e.laundry_guest_laundry_transaction_id).HasColumnType("int(11)");
+
+                entity.Property(e => e.laundry_item_id).HasColumnType("int(11)");
+
+                entity.Property(e => e.quantity).HasColumnType("int(11)");
+
+                entity.Property(e => e.status)
+                    .HasMaxLength(200)
+                    .IsUnicode(false);
+
+                entity.HasOne(d => d.laundry_guest_laundry_transaction_)
+                    .WithMany(p => p.laundry_hotel_laundry_transaction_items)
+                    .HasForeignKey(d => d.laundry_guest_laundry_transaction_id)
+                    .OnDelete(DeleteBehavior.ClientSetNull)
+                    .HasConstraintName("laundry_guest_laundry_transaction_key900077");
+
+                entity.HasOne(d => d.laundry_item_)
+                    .WithMany(p => p.laundry_hotel_laundry_transaction_items)
+                    .HasForeignKey(d => d.laundry_item_id)
+                    .OnDelete(DeleteBehavior.ClientSetNull)
+                    .HasConstraintName("laundry_item_key876543");
+            });
+
+            modelBuilder.Entity<laundry_hotel_laundry_transactions>(entity =>
+            {
+                entity.ToTable("laundry_hotel_laundry_transactions", "hotel_db");
+
+                entity.HasIndex(e => e.laundry_hotel_service_id)
+                    .HasName("laundry_hotel_services_key0008654");
+
+                entity.HasIndex(e => e.laundry_packaging_type_id)
+                    .HasName("laundry_packaging_type_key456750");
+
+                entity.HasIndex(e => e.laundry_service_id)
+                    .HasName("laundry_service_key4453289");
+
+                entity.Property(e => e.id).HasColumnType("int(11)");
+
+                entity.Property(e => e.code)
+                    .HasMaxLength(200)
+                    .IsUnicode(false);
+
+                entity.Property(e => e.delivery_time)
+                    .HasMaxLength(100)
+                    .IsUnicode(false);
+
+                entity.Property(e => e.laundry_hotel_service_id).HasColumnType("int(11)");
+
+                entity.Property(e => e.laundry_packaging_type_id).HasColumnType("int(11)");
+
+                entity.Property(e => e.laundry_service_id).HasColumnType("int(11)");
+
+                entity.Property(e => e.status)
+                    .HasMaxLength(200)
+                    .IsUnicode(false);
+
+                entity.Property(e => e.transaction_time)
+                    .HasMaxLength(200)
+                    .IsUnicode(false);
+
+                entity.HasOne(d => d.laundry_hotel_service_)
+                    .WithMany(p => p.laundry_hotel_laundry_transactions)
+                    .HasForeignKey(d => d.laundry_hotel_service_id)
+                    .OnDelete(DeleteBehavior.ClientSetNull)
+                    .HasConstraintName("laundry_hotel_services_key0008654");
+
+                entity.HasOne(d => d.laundry_packaging_type_)
+                    .WithMany(p => p.laundry_hotel_laundry_transactions)
+                    .HasForeignKey(d => d.laundry_packaging_type_id)
+                    .OnDelete(DeleteBehavior.ClientSetNull)
+                    .HasConstraintName("laundry_packaging_type_key456750");
+
+                entity.HasOne(d => d.laundry_service_)
+                    .WithMany(p => p.laundry_hotel_laundry_transactions)
+                    .HasForeignKey(d => d.laundry_service_id)
+                    .OnDelete(DeleteBehavior.ClientSetNull)
+                    .HasConstraintName("laundry_service_key4453289");
+            });
+
+            modelBuilder.Entity<laundry_hotel_services>(entity =>
+            {
+                entity.ToTable("laundry_hotel_services", "hotel_db");
+
+                entity.Property(e => e.id).HasColumnType("int(11)");
+
+                entity.Property(e => e.description).IsUnicode(false);
+
+                entity.Property(e => e.extra_charges).HasColumnType("decimal(20,2)");
+
+                entity.Property(e => e.service_name)
+                    .IsRequired()
+                    .HasMaxLength(250)
+                    .IsUnicode(false);
+            });
+
+            modelBuilder.Entity<laundry_item_categories>(entity =>
+            {
+                entity.ToTable("laundry_item_categories", "hotel_db");
+
+                entity.Property(e => e.id).HasColumnType("int(11)");
+
+                entity.Property(e => e.category_image)
+                    .HasMaxLength(350)
+                    .IsUnicode(false);
+
+                entity.Property(e => e.category_name)
+                    .IsRequired()
+                    .HasMaxLength(200)
+                    .IsUnicode(false);
+
+                entity.Property(e => e.description).IsUnicode(false);
+            });
+
+            modelBuilder.Entity<laundry_items>(entity =>
+            {
+                entity.ToTable("laundry_items", "hotel_db");
+
+                entity.HasIndex(e => e.laundry_item_category_id)
+                    .HasName("item_category__key_2993100");
+
+                entity.Property(e => e.id).HasColumnType("int(11)");
+
+                entity.Property(e => e.charges).HasColumnType("decimal(20,2)");
+
+                entity.Property(e => e.code)
+                    .HasMaxLength(250)
+                    .IsUnicode(false);
+
+                entity.Property(e => e.description).IsUnicode(false);
+
+                entity.Property(e => e.item_name)
+                    .HasMaxLength(250)
+                    .IsUnicode(false);
+
+                entity.Property(e => e.item_type)
+                    .HasMaxLength(250)
+                    .IsUnicode(false);
+
+                entity.Property(e => e.laundry_item_category_id).HasColumnType("int(11)");
+
+                entity.HasOne(d => d.laundry_item_category_)
+                    .WithMany(p => p.laundry_items)
+                    .HasForeignKey(d => d.laundry_item_category_id)
+                    .HasConstraintName("item_category__key_2993100");
+            });
+
+            modelBuilder.Entity<laundry_items_laundry_services>(entity =>
+            {
+                entity.HasKey(e => new { e.laundry_item_id, e.laundry_service_id });
+
+                entity.ToTable("laundry_items_laundry_services", "hotel_db");
+
+                entity.HasIndex(e => e.laundry_service_id)
+                    .HasName("laundry_service_key9800");
+
+                entity.Property(e => e.laundry_item_id).HasColumnType("int(11)");
+
+                entity.Property(e => e.laundry_service_id).HasColumnType("int(11)");
+
+                entity.HasOne(d => d.laundry_item_)
+                    .WithMany(p => p.laundry_items_laundry_services)
+                    .HasForeignKey(d => d.laundry_item_id)
+                    .OnDelete(DeleteBehavior.ClientSetNull)
+                    .HasConstraintName("laundry_item_key6700");
+
+                entity.HasOne(d => d.laundry_service_)
+                    .WithMany(p => p.laundry_items_laundry_services)
+                    .HasForeignKey(d => d.laundry_service_id)
+                    .OnDelete(DeleteBehavior.ClientSetNull)
+                    .HasConstraintName("laundry_service_key9800");
+            });
+
+            modelBuilder.Entity<laundry_packaging_types>(entity =>
+            {
+                entity.ToTable("laundry_packaging_types", "hotel_db");
+
+                entity.Property(e => e.id).HasColumnType("int(11)");
+
+                entity.Property(e => e.packaging_image)
+                    .HasMaxLength(350)
+                    .IsUnicode(false);
+
+                entity.Property(e => e.packaging_name)
+                    .HasMaxLength(250)
+                    .IsUnicode(false);
+            });
+
+            modelBuilder.Entity<laundry_services>(entity =>
+            {
+                entity.ToTable("laundry_services", "hotel_db");
+
+                entity.Property(e => e.id).HasColumnType("int(11)");
+
+                entity.Property(e => e.description).IsUnicode(false);
+
+                entity.Property(e => e.service_image)
+                    .HasMaxLength(350)
+                    .IsUnicode(false);
+
+                entity.Property(e => e.service_name)
+                    .IsRequired()
+                    .HasMaxLength(250)
+                    .IsUnicode(false);
             });
 
             modelBuilder.Entity<mainconfig>(entity =>

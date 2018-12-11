@@ -7,6 +7,7 @@ namespace CHIS.Core.Domain
     {
         public accounts()
         {
+            laundry_guest_laundry_transactions = new HashSet<laundry_guest_laundry_transactions>();
             reservations = new HashSet<reservations>();
         }
 
@@ -45,6 +46,7 @@ namespace CHIS.Core.Domain
 
         public account_types account_type_ { get; set; }
         public hotel_representatives hotel_representative_ { get; set; }
+        public ICollection<laundry_guest_laundry_transactions> laundry_guest_laundry_transactions { get; set; }
         public ICollection<reservations> reservations { get; set; }
     }
 }
